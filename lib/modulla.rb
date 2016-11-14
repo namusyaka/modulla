@@ -5,8 +5,21 @@ module Modulla
     Module.new.extend(self).class_eval(&block)
   end
 
-  def included(klass)
-    reproduce(klass)
+  def self.extended(klass)
+    klass.extend ClassMethods
+  end
+
+  module ClassMethods
+    def included(klass)
+      klass.extend const_get(:ClassMethods) if const_defined?(:ClassMethods)
+      klass ? reproduce(klass) : record(:class_eval, &block)
+    end
+  end
+
+  private
+
+  def record(method, *args, &block)
+    record_keeper << [method, args, block]
   end
 
   def reproduce(klass)
@@ -20,6 +33,6 @@ module Modulla
   end
 
   def method_missing(method, *args, &block)
-    record_keeper << [method, args, block]
+    record(method, *args, &block)
   end
 end
